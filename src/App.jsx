@@ -773,6 +773,12 @@ function SharePage() {
       ctx.fillStyle = '#A09080';
       ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.fillText('像老乡鸡那样做饭', P + 115, H - 22);
+
+      ctx.fillStyle = '#A09080';
+      ctx.font = '11px "PingFang SC", "Microsoft YaHei", sans-serif';
+      const urlText = 'cook.zhouhao.cn';
+      const urlW = ctx.measureText(urlText).width;
+      ctx.fillText(urlText, W - P - urlW, H - 22);
     };
 
     drawFrame();
@@ -856,6 +862,8 @@ function SharePage() {
           )}
           <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>
+
+        <p className="share-save-tip">长按图片保存到本地</p>
 
         <div className="share-url-box">
           <span className="share-url-text">{shareUrl}</span>

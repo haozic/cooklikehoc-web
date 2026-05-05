@@ -1313,6 +1313,13 @@ button {
   font-size: 14px;
 }
 
+.share-save-tip {
+  font-size: 13px;
+  color: var(--gray-500);
+  text-align: center;
+  margin: 0;
+}
+
 .share-qrcode {
   display: flex;
   flex-direction: column;

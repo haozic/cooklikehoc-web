@@ -17,6 +17,9 @@ debug-*
 pdf-*
 *debug*
 
+# AI model files
+*.pb
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

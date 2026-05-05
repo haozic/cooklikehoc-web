@@ -1,16 +1,59 @@
-# React + Vite
+# CookLikeHOC
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+老乡鸡菜品展示网站，支持菜谱浏览、分类筛选、详情查看和分享图生成。
 
-Currently, two official plugins are available:
+## 技术栈
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** + **React Router 7**
+- **Vite 8** 构建工具
+- **Ant Design Icons** 图标库
+- 纯 CSS 样式（玻璃拟态风格）
 
-## React Compiler
+## 功能
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 首页精选推荐（横向滑动）
+- 分类浏览（炒菜、蒸菜、炖菜、炸品、主食等）
+- 菜谱详情（食材、调料、步骤）
+- 分享图生成（Canvas 动态渲染，自适应字号）
+- 相关菜谱推荐
+- 响应式布局
 
-## Expanding the ESLint configuration
+## 本地开发
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev
+```
+
+## 构建
+
+```bash
+npm run build
+```
+
+产物在 `dist/` 目录。
+
+## 部署
+
+推荐使用 Cloudflare Pages：
+
+1. 连接 GitHub 仓库
+2. 构建命令：`npm run build`
+3. 输出目录：`dist`
+4. 框架预设：Vite
+
+## 项目结构
+
+```
+├── public/
+│   └── images/          # 菜谱图片
+├── scripts/             # 数据同步脚本
+├── src/
+│   ├── assets/          # 静态资源
+│   ├── data/            # 菜谱数据
+│   ├── App.jsx          # 主组件
+│   ├── App.css          # 样式
+│   └── main.jsx         # 入口
+├── index.html
+└── vite.config.js
+```

@@ -626,20 +626,22 @@ function SharePage() {
     canvas.height = H;
 
     const P = 32;
-    const imgH = 300;
+    const headerH = 260;
     const accentH = 4;
     const brandH = 44;
-    const gapTop = 20;
-    const infoPadTop = 24;
-    const infoPadBot = 20;
-    const titleFontSize = 30;
-    const titleLineH = 40;
-    const tagH = 28;
-    const tagGap = 6;
-    const infoH = infoPadTop + titleLineH * 2 + 8 + tagH + infoPadBot;
+    const gapTop = 24;
     const maxStepsY = H - brandH;
-    const stepsStartY = imgH + infoH + accentH + gapTop;
+    const stepsStartY = headerH + accentH + gapTop;
     const availableH = maxStepsY - stepsStartY;
+    const imgSize = 212;
+    const imgX = W - P - imgSize;
+    const imgY = (headerH - imgSize) / 2;
+    const leftX = P;
+    const leftW = imgX - P - 24;
+    const leftBarX = leftX;
+    const leftBarW = 4;
+    const leftContentX = leftBarX + leftBarW + 14;
+    const leftContentW = leftW - leftBarW - 14;
 
     const allSteps = recipe.steps;
 
@@ -693,61 +695,61 @@ function SharePage() {
     };
 
     const drawHeader = (img) => {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, W, imgH);
-      ctx.clip();
-      const scale = Math.max(W / img.width, imgH / img.height);
-      const sw = img.width * scale;
-      const sh = img.height * scale;
-      const sx = (W - sw) / 2;
-      const sy = (imgH - sh) / 2;
-      ctx.drawImage(img, sx, sy, sw, sh);
-      ctx.restore();
-
-      const grad = ctx.createLinearGradient(0, imgH - 120, 0, imgH);
-      grad.addColorStop(0, 'rgba(61,43,31,0)');
-      grad.addColorStop(1, 'rgba(61,43,31,0.35)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, imgH - 120, W, 120);
-
-      ctx.fillStyle = '#FFFBF5';
-      ctx.fillRect(0, imgH, W, infoH);
-
       ctx.fillStyle = '#C44D34';
-      ctx.fillRect(0, imgH + infoH, W, accentH);
+      ctx.fillRect(leftBarX, imgY, leftBarW, imgSize);
 
-      ctx.textAlign = 'center';
+      ctx.fillStyle = '#A09080';
+      ctx.font = '11px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText('食谱', leftContentX, imgY + 18);
+
       ctx.fillStyle = '#3D2B1F';
+      const titleFontSize = 28;
       ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
-      const titleMaxW = W - P * 2;
-      const titleLines = wrapText(ctx, recipe.title, titleMaxW);
-      const actualTitleLines = Math.min(titleLines.length, 2);
-      const titleStartY = imgH + infoPadTop + titleLineH - 8;
-      for (let ti = 0; ti < actualTitleLines; ti++) {
-        ctx.fillText(titleLines[ti], W / 2, titleStartY + ti * titleLineH);
+      const titleLines = wrapText(ctx, recipe.title, leftContentW);
+      const titleLineH = 38;
+      let ty = imgY + 50;
+      for (let ti = 0; ti < Math.min(titleLines.length, 2); ti++) {
+        ctx.fillText(titleLines[ti], leftContentX, ty);
+        ty += titleLineH;
       }
 
       const tags = [recipe.category, recipe.flavorType, recipe.cookingMethod].filter(Boolean).filter(t => t !== '/');
       if (tags.length > 0) {
+        const tagY = imgY + imgSize - 28;
         ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
-        let totalTagsW = 0;
-        const tagWidths = tags.map(t => ctx.measureText(t).width + 16);
-        totalTagsW = tagWidths.reduce((s, w) => s + w, 0) + (tags.length - 1) * tagGap;
-        const tagY = imgH + infoPadTop + actualTitleLines * titleLineH + 8 + tagH;
-        let tx = (W - totalTagsW) / 2;
-        for (let ti = 0; ti < tags.length; ti++) {
-          const tw = tagWidths[ti];
+        let tx = leftContentX;
+        for (const tag of tags) {
+          const tw = ctx.measureText(tag).width + 16;
           ctx.fillStyle = '#C44D34';
           ctx.beginPath();
-          rr(tx, tagY - tagH, tw, tagH, tagH / 2);
+          rr(tx, tagY, tw, 24, 12);
           ctx.fill();
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(tags[ti], tx + tw / 2, tagY - 8);
-          tx += tw + tagGap;
+          ctx.fillText(tag, tx + 8, tagY + 16);
+          tx += tw + 8;
         }
       }
-      ctx.textAlign = 'start';
+
+      ctx.save();
+      rr(imgX, imgY, imgSize, imgSize, 14);
+      ctx.clip();
+      const scale = Math.max(imgSize / img.width, imgSize / img.height);
+      const sw = img.width * scale;
+      const sh = img.height * scale;
+      const sx = imgX + (imgSize - sw) / 2;
+      const sy = imgY + (imgSize - sh) / 2;
+      ctx.drawImage(img, sx, sy, sw, sh);
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1.5;
+      rr(imgX, imgY, imgSize, imgSize, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#C44D34';
+      ctx.fillRect(0, headerH, W, accentH);
     };
 
     const drawStepsSection = () => {
@@ -821,11 +823,12 @@ function SharePage() {
 
     recipeImg.onerror = () => {
       ctx.fillStyle = '#EDE8E0';
-      ctx.fillRect(0, 0, W, imgH);
+      rr(imgX, imgY, imgSize, imgSize, 14);
+      ctx.fill();
       ctx.fillStyle = '#8B7355';
-      ctx.font = 'bold 20px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.font = 'bold 14px "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(recipe.title, W / 2, imgH / 2 + 8);
+      ctx.fillText(recipe.title, imgX + imgSize / 2, imgY + imgSize / 2 + 6);
       ctx.textAlign = 'start';
       drawStepsSection();
       drawBranding();

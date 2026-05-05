@@ -620,6 +620,8 @@ function SharePage() {
     if (!recipe || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     const W = 600;
     const H = 800;
     canvas.width = W;

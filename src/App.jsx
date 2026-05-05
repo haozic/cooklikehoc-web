@@ -626,13 +626,17 @@ function SharePage() {
     canvas.height = H;
 
     const P = 32;
-    const imgH = 360;
+    const imgSize = 220;
+    const headerH = P + imgSize;
     const accentH = 4;
     const brandH = 44;
-    const gapTop = 20;
+    const gapTop = 28;
     const maxStepsY = H - brandH;
-    const stepsStartY = imgH + accentH + gapTop;
+    const stepsStartY = headerH + accentH + gapTop;
     const availableH = maxStepsY - stepsStartY;
+    const imgX = W - P - imgSize;
+    const imgY = P;
+    const leftW = imgX - P - 20;
 
     const allSteps = recipe.steps;
 
@@ -685,43 +689,42 @@ function SharePage() {
       ctx.fillRect(0, 0, W, H);
     };
 
-    const drawImageArea = (img) => {
+    const drawHeader = (img) => {
       ctx.save();
-      rr(0, 0, W, imgH, 0);
+      rr(imgX, imgY, imgSize, imgSize, 14);
       ctx.clip();
-      ctx.drawImage(img, 0, 0, W, imgH);
+      ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
       ctx.restore();
 
-      const grad = ctx.createLinearGradient(0, imgH - 180, 0, imgH);
-      grad.addColorStop(0, 'rgba(61,43,31,0)');
-      grad.addColorStop(0.45, 'rgba(61,43,31,0.35)');
-      grad.addColorStop(1, 'rgba(61,43,31,0.7)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, imgH - 180, W, 180);
-
       ctx.fillStyle = '#C44D34';
-      ctx.fillRect(0, imgH, W, accentH);
+      ctx.fillRect(0, headerH, W, accentH);
 
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 38px "Noto Serif SC", "SimSun", "PingFang SC", serif';
-      ctx.shadowColor = 'rgba(0,0,0,0.25)';
-      ctx.shadowBlur = 10;
-      ctx.fillText(recipe.title, P, imgH - 56);
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#A09080';
+      ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText('RECIPE', P, 52);
+
+      ctx.fillStyle = '#3D2B1F';
+      ctx.font = 'bold 30px "Noto Serif SC", "SimSun", "PingFang SC", serif';
+      const titleLines = wrapText(ctx, recipe.title, leftW);
+      let titleY = 82;
+      for (let ti = 0; ti < Math.min(titleLines.length, 3); ti++) {
+        ctx.fillText(titleLines[ti], P, titleY);
+        titleY += 38;
+      }
 
       const tags = [recipe.category, recipe.flavorType, recipe.cookingMethod].filter(Boolean).filter(t => t !== '/');
       if (tags.length > 0) {
-        ctx.font = '13px "PingFang SC", "Microsoft YaHei", sans-serif';
+        const tagY = Math.max(titleY + 4, imgY + imgSize - 28);
+        ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
         let tx = P;
         for (const tag of tags) {
-          const tw = ctx.measureText(tag).width + 18;
-          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+          const tw = ctx.measureText(tag).width + 16;
+          ctx.fillStyle = '#C44D34';
           ctx.beginPath();
-          rr(tx, imgH - 24, tw, 22, 11);
+          rr(tx, tagY, tw, 24, 12);
           ctx.fill();
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(tag, tx + 9, imgH - 9);
+          ctx.fillText(tag, tx + 8, tagY + 16);
           tx += tw + 8;
         }
       }
@@ -790,20 +793,20 @@ function SharePage() {
     recipeImg.src = recipe.image;
 
     recipeImg.onload = () => {
-      drawImageArea(recipeImg);
+      drawHeader(recipeImg);
       drawStepsSection();
       drawBranding();
       setImageUrl(canvas.toDataURL('image/jpeg', 0.92));
     };
 
     recipeImg.onerror = () => {
-      ctx.fillStyle = '#E8E0D5';
-      rr(20, 20, W - 40, imgH, 12);
+      ctx.fillStyle = '#EDE8E0';
+      rr(imgX, imgY, imgSize, imgSize, 14);
       ctx.fill();
       ctx.fillStyle = '#8B7355';
-      ctx.font = 'bold 22px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.font = 'bold 16px "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(recipe.title, W / 2, imgH / 2 + 20);
+      ctx.fillText(recipe.title, imgX + imgSize / 2, imgY + imgSize / 2 + 6);
       ctx.textAlign = 'start';
       drawStepsSection();
       drawBranding();

@@ -626,12 +626,19 @@ function SharePage() {
     canvas.height = H;
 
     const P = 32;
-    const imgH = 340;
+    const imgH = 300;
     const accentH = 4;
     const brandH = 44;
-    const gapTop = 24;
+    const gapTop = 20;
+    const infoPadTop = 24;
+    const infoPadBot = 20;
+    const titleFontSize = 30;
+    const titleLineH = 40;
+    const tagH = 28;
+    const tagGap = 6;
+    const infoH = infoPadTop + titleLineH * 2 + 8 + tagH + infoPadBot;
     const maxStepsY = H - brandH;
-    const stepsStartY = imgH + accentH + gapTop;
+    const stepsStartY = imgH + infoH + accentH + gapTop;
     const availableH = maxStepsY - stepsStartY;
 
     const allSteps = recipe.steps;
@@ -690,68 +697,57 @@ function SharePage() {
       ctx.beginPath();
       ctx.rect(0, 0, W, imgH);
       ctx.clip();
-      ctx.drawImage(img, 0, 0, W, imgH);
+      const scale = Math.max(W / img.width, imgH / img.height);
+      const sw = img.width * scale;
+      const sh = img.height * scale;
+      const sx = (W - sw) / 2;
+      const sy = (imgH - sh) / 2;
+      ctx.drawImage(img, sx, sy, sw, sh);
       ctx.restore();
 
-      const grad = ctx.createLinearGradient(0, imgH - 200, 0, imgH);
+      const grad = ctx.createLinearGradient(0, imgH - 120, 0, imgH);
       grad.addColorStop(0, 'rgba(61,43,31,0)');
-      grad.addColorStop(0.5, 'rgba(61,43,31,0.2)');
-      grad.addColorStop(1, 'rgba(61,43,31,0.55)');
+      grad.addColorStop(1, 'rgba(61,43,31,0.35)');
       ctx.fillStyle = grad;
-      ctx.fillRect(0, imgH - 200, W, 200);
+      ctx.fillRect(0, imgH - 120, W, 120);
+
+      ctx.fillStyle = '#FFFBF5';
+      ctx.fillRect(0, imgH, W, infoH);
 
       ctx.fillStyle = '#C44D34';
-      ctx.fillRect(0, imgH, W, accentH);
+      ctx.fillRect(0, imgH + infoH, W, accentH);
 
-      const cardPad = 20;
-      const cardX = 20;
-      const cardW = W - 40;
-      const titleFontSize = 28;
-      ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
-      const titleMaxW = cardW - cardPad * 2;
-      const titleLines = wrapText(ctx, recipe.title, titleMaxW);
-      const titleLineH = 38;
-      const tagsH = 32;
-      const cardH = cardPad + titleLines.length * titleLineH + 8 + tagsH + cardPad;
-      const cardY = imgH - cardH - 16;
-
-      ctx.fillStyle = 'rgba(255,255,255,0.72)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = 1;
-      ctx.shadowColor = 'rgba(0,0,0,0.12)';
-      ctx.shadowBlur = 16;
-      ctx.shadowOffsetY = 4;
-      rr(cardX, cardY, cardW, cardH, 16);
-      ctx.fill();
-      ctx.stroke();
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-
+      ctx.textAlign = 'center';
       ctx.fillStyle = '#3D2B1F';
       ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
-      let ty = cardY + cardPad + titleLineH - 8;
-      for (let ti = 0; ti < titleLines.length; ti++) {
-        ctx.fillText(titleLines[ti], cardX + cardPad, ty);
-        ty += titleLineH;
+      const titleMaxW = W - P * 2;
+      const titleLines = wrapText(ctx, recipe.title, titleMaxW);
+      const actualTitleLines = Math.min(titleLines.length, 2);
+      const titleStartY = imgH + infoPadTop + titleLineH - 8;
+      for (let ti = 0; ti < actualTitleLines; ti++) {
+        ctx.fillText(titleLines[ti], W / 2, titleStartY + ti * titleLineH);
       }
 
       const tags = [recipe.category, recipe.flavorType, recipe.cookingMethod].filter(Boolean).filter(t => t !== '/');
       if (tags.length > 0) {
-        const tagY = cardY + cardH - cardPad - tagsH + 22;
         ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
-        let tx = cardX + cardPad;
-        for (const tag of tags) {
-          const tw = ctx.measureText(tag).width + 16;
+        let totalTagsW = 0;
+        const tagWidths = tags.map(t => ctx.measureText(t).width + 16);
+        totalTagsW = tagWidths.reduce((s, w) => s + w, 0) + (tags.length - 1) * tagGap;
+        const tagY = imgH + infoPadTop + actualTitleLines * titleLineH + 8 + tagH;
+        let tx = (W - totalTagsW) / 2;
+        for (let ti = 0; ti < tags.length; ti++) {
+          const tw = tagWidths[ti];
           ctx.fillStyle = '#C44D34';
           ctx.beginPath();
-          rr(tx, tagY - 22, tw, 24, 12);
+          rr(tx, tagY - tagH, tw, tagH, tagH / 2);
           ctx.fill();
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(tag, tx + 8, tagY - 6);
-          tx += tw + 8;
+          ctx.fillText(tags[ti], tx + tw / 2, tagY - 8);
+          tx += tw + tagGap;
         }
       }
+      ctx.textAlign = 'start';
     };
 
     const drawStepsSection = () => {

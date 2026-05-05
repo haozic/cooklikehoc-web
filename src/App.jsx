@@ -636,7 +636,7 @@ function SharePage() {
     const imgSize = 240;
     const imgX = P;
     const imgY = (headerH - imgSize) / 2;
-    const infoX = imgX + imgSize + 20;
+    const infoX = imgX + imgSize + 16;
     const infoW = W - infoX - P;
 
     const allSteps = recipe.steps;
@@ -709,31 +709,38 @@ function SharePage() {
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = '#A09080';
-      ctx.font = '11px "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.fillText('食谱', infoX, imgY + 18);
-
-      ctx.fillStyle = '#3D2B1F';
       const titleFontSize = 28;
       ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
       const titleLines = wrapText(ctx, recipe.title, infoW);
-      const titleLineH = 38;
-      let ty = imgY + 50;
-      for (let ti = 0; ti < Math.min(titleLines.length, 2); ti++) {
+      const actualTitleLines = Math.min(titleLines.length, 2);
+      const titleLineH = 36;
+      const labelH = 16;
+      const tagsH = 24;
+      const infoBlockH = labelH + 4 + actualTitleLines * titleLineH + 8 + tagsH;
+      const infoTop = imgY + (imgSize - infoBlockH) / 2;
+
+      ctx.fillStyle = '#A09080';
+      ctx.font = '11px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText('食谱', infoX, infoTop + 12);
+
+      ctx.fillStyle = '#3D2B1F';
+      ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
+      let ty = infoTop + labelH + 4 + titleLineH - 8;
+      for (let ti = 0; ti < actualTitleLines; ti++) {
         ctx.fillText(titleLines[ti], infoX, ty);
         ty += titleLineH;
       }
 
       const tags = [recipe.category, recipe.flavorType, recipe.cookingMethod].filter(Boolean).filter(t => t !== '/');
       if (tags.length > 0) {
-        const tagY = imgY + imgSize - 28;
+        const tagY = infoTop + infoBlockH - tagsH;
         ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
         let tx = infoX;
         for (const tag of tags) {
           const tw = ctx.measureText(tag).width + 16;
           ctx.fillStyle = '#C44D34';
           ctx.beginPath();
-          rr(tx, tagY, tw, 24, 12);
+          rr(tx, tagY, tw, tagsH, tagsH / 2);
           ctx.fill();
           ctx.fillStyle = '#FFFFFF';
           ctx.fillText(tag, tx + 8, tagY + 16);

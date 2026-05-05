@@ -626,17 +626,13 @@ function SharePage() {
     canvas.height = H;
 
     const P = 32;
-    const imgSize = 220;
-    const headerH = P + imgSize;
+    const imgH = 340;
     const accentH = 4;
     const brandH = 44;
-    const gapTop = 28;
+    const gapTop = 24;
     const maxStepsY = H - brandH;
-    const stepsStartY = headerH + accentH + gapTop;
+    const stepsStartY = imgH + accentH + gapTop;
     const availableH = maxStepsY - stepsStartY;
-    const imgX = W - P - imgSize;
-    const imgY = P;
-    const leftW = imgX - P - 20;
 
     const allSteps = recipe.steps;
 
@@ -691,40 +687,68 @@ function SharePage() {
 
     const drawHeader = (img) => {
       ctx.save();
-      rr(imgX, imgY, imgSize, imgSize, 14);
+      ctx.beginPath();
+      ctx.rect(0, 0, W, imgH);
       ctx.clip();
-      ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
+      ctx.drawImage(img, 0, 0, W, imgH);
       ctx.restore();
 
-      ctx.fillStyle = '#C44D34';
-      ctx.fillRect(0, headerH, W, accentH);
+      const grad = ctx.createLinearGradient(0, imgH - 200, 0, imgH);
+      grad.addColorStop(0, 'rgba(61,43,31,0)');
+      grad.addColorStop(0.5, 'rgba(61,43,31,0.2)');
+      grad.addColorStop(1, 'rgba(61,43,31,0.55)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, imgH - 200, W, 200);
 
-      ctx.fillStyle = '#A09080';
-      ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.fillText('RECIPE', P, 52);
+      ctx.fillStyle = '#C44D34';
+      ctx.fillRect(0, imgH, W, accentH);
+
+      const cardPad = 20;
+      const cardX = 20;
+      const cardW = W - 40;
+      const titleFontSize = 28;
+      ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
+      const titleMaxW = cardW - cardPad * 2;
+      const titleLines = wrapText(ctx, recipe.title, titleMaxW);
+      const titleLineH = 38;
+      const tagsH = 32;
+      const cardH = cardPad + titleLines.length * titleLineH + 8 + tagsH + cardPad;
+      const cardY = imgH - cardH - 16;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.shadowColor = 'rgba(0,0,0,0.12)';
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetY = 4;
+      rr(cardX, cardY, cardW, cardH, 16);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
 
       ctx.fillStyle = '#3D2B1F';
-      ctx.font = 'bold 30px "Noto Serif SC", "SimSun", "PingFang SC", serif';
-      const titleLines = wrapText(ctx, recipe.title, leftW);
-      let titleY = 82;
-      for (let ti = 0; ti < Math.min(titleLines.length, 3); ti++) {
-        ctx.fillText(titleLines[ti], P, titleY);
-        titleY += 38;
+      ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
+      let ty = cardY + cardPad + titleLineH - 8;
+      for (let ti = 0; ti < titleLines.length; ti++) {
+        ctx.fillText(titleLines[ti], cardX + cardPad, ty);
+        ty += titleLineH;
       }
 
       const tags = [recipe.category, recipe.flavorType, recipe.cookingMethod].filter(Boolean).filter(t => t !== '/');
       if (tags.length > 0) {
-        const tagY = Math.max(titleY + 4, imgY + imgSize - 28);
+        const tagY = cardY + cardH - cardPad - tagsH + 22;
         ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
-        let tx = P;
+        let tx = cardX + cardPad;
         for (const tag of tags) {
           const tw = ctx.measureText(tag).width + 16;
           ctx.fillStyle = '#C44D34';
           ctx.beginPath();
-          rr(tx, tagY, tw, 24, 12);
+          rr(tx, tagY - 22, tw, 24, 12);
           ctx.fill();
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(tag, tx + 8, tagY + 16);
+          ctx.fillText(tag, tx + 8, tagY - 6);
           tx += tw + 8;
         }
       }
@@ -801,12 +825,11 @@ function SharePage() {
 
     recipeImg.onerror = () => {
       ctx.fillStyle = '#EDE8E0';
-      rr(imgX, imgY, imgSize, imgSize, 14);
-      ctx.fill();
+      ctx.fillRect(0, 0, W, imgH);
       ctx.fillStyle = '#8B7355';
-      ctx.font = 'bold 16px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.font = 'bold 20px "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(recipe.title, imgX + imgSize / 2, imgY + imgSize / 2 + 6);
+      ctx.fillText(recipe.title, W / 2, imgH / 2 + 8);
       ctx.textAlign = 'start';
       drawStepsSection();
       drawBranding();

@@ -634,10 +634,10 @@ function SharePage() {
     const stepsStartY = headerH + accentH + gapTop;
     const availableH = maxStepsY - stepsStartY;
     const imgSize = 240;
-    const imgX = P;
+    const imgX = W - P - imgSize;
     const imgY = (headerH - imgSize) / 2;
-    const infoX = imgX + imgSize + 16;
-    const infoW = W - infoX - P;
+    const infoX = P;
+    const infoW = imgX - P - 16;
 
     const allSteps = recipe.steps;
 
@@ -686,13 +686,16 @@ function SharePage() {
     };
 
     const drawFrame = () => {
-      ctx.fillStyle = '#FFFBF5';
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#FFFBF5');
+      bg.addColorStop(1, '#F8F2E8');
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
     };
 
     const drawHeader = (img) => {
       ctx.save();
-      rr(imgX, imgY, imgSize, imgSize, 14);
+      rr(imgX, imgY, imgSize, imgSize, 16);
       ctx.clip();
       const scale = Math.max(imgSize / img.width, imgSize / img.height);
       const sw = img.width * scale;
@@ -702,30 +705,30 @@ function SharePage() {
       ctx.drawImage(img, sx, sy, sw, sh);
       ctx.restore();
 
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-      ctx.lineWidth = 1.5;
-      rr(imgX, imgY, imgSize, imgSize, 14);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 1;
+      rr(imgX, imgY, imgSize, imgSize, 16);
       ctx.fill();
       ctx.stroke();
 
-      const titleFontSize = 28;
+      const titleFontSize = 32;
       ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
       const titleLines = wrapText(ctx, recipe.title, infoW);
       const actualTitleLines = Math.min(titleLines.length, 2);
-      const titleLineH = 36;
+      const titleLineH = 40;
       const labelH = 16;
-      const tagsH = 24;
-      const infoBlockH = labelH + 4 + actualTitleLines * titleLineH + 8 + tagsH;
+      const tagsH = 26;
+      const infoBlockH = labelH + 4 + actualTitleLines * titleLineH + 10 + tagsH;
       const infoTop = imgY + (imgSize - infoBlockH) / 2;
 
       ctx.fillStyle = '#A09080';
-      ctx.font = '11px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.fillText('食谱', infoX, infoTop + 12);
 
       ctx.fillStyle = '#3D2B1F';
       ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
-      let ty = infoTop + labelH + 4 + titleLineH - 8;
+      let ty = infoTop + labelH + 4 + titleLineH - 10;
       for (let ti = 0; ti < actualTitleLines; ti++) {
         ctx.fillText(titleLines[ti], infoX, ty);
         ty += titleLineH;
@@ -734,16 +737,16 @@ function SharePage() {
       const tags = [recipe.category, recipe.flavorType, recipe.cookingMethod].filter(Boolean).filter(t => t !== '/');
       if (tags.length > 0) {
         const tagY = infoTop + infoBlockH - tagsH;
-        ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.font = '13px "PingFang SC", "Microsoft YaHei", sans-serif';
         let tx = infoX;
         for (const tag of tags) {
-          const tw = ctx.measureText(tag).width + 16;
+          const tw = ctx.measureText(tag).width + 18;
           ctx.fillStyle = '#C44D34';
           ctx.beginPath();
           rr(tx, tagY, tw, tagsH, tagsH / 2);
           ctx.fill();
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(tag, tx + 8, tagY + 16);
+          ctx.fillText(tag, tx + 9, tagY + 18);
           tx += tw + 8;
         }
       }

@@ -633,15 +633,11 @@ function SharePage() {
     const maxStepsY = H - brandH;
     const stepsStartY = headerH + accentH + gapTop;
     const availableH = maxStepsY - stepsStartY;
-    const imgSize = 212;
-    const imgX = W - P - imgSize;
+    const imgSize = 240;
+    const imgX = P;
     const imgY = (headerH - imgSize) / 2;
-    const leftX = P;
-    const leftW = imgX - P - 24;
-    const leftBarX = leftX;
-    const leftBarW = 4;
-    const leftContentX = leftBarX + leftBarW + 14;
-    const leftContentW = leftW - leftBarW - 14;
+    const infoX = imgX + imgSize + 20;
+    const infoW = W - infoX - P;
 
     const allSteps = recipe.steps;
 
@@ -695,41 +691,6 @@ function SharePage() {
     };
 
     const drawHeader = (img) => {
-      ctx.fillStyle = '#C44D34';
-      ctx.fillRect(leftBarX, imgY, leftBarW, imgSize);
-
-      ctx.fillStyle = '#A09080';
-      ctx.font = '11px "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.fillText('食谱', leftContentX, imgY + 18);
-
-      ctx.fillStyle = '#3D2B1F';
-      const titleFontSize = 28;
-      ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
-      const titleLines = wrapText(ctx, recipe.title, leftContentW);
-      const titleLineH = 38;
-      let ty = imgY + 50;
-      for (let ti = 0; ti < Math.min(titleLines.length, 2); ti++) {
-        ctx.fillText(titleLines[ti], leftContentX, ty);
-        ty += titleLineH;
-      }
-
-      const tags = [recipe.category, recipe.flavorType, recipe.cookingMethod].filter(Boolean).filter(t => t !== '/');
-      if (tags.length > 0) {
-        const tagY = imgY + imgSize - 28;
-        ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
-        let tx = leftContentX;
-        for (const tag of tags) {
-          const tw = ctx.measureText(tag).width + 16;
-          ctx.fillStyle = '#C44D34';
-          ctx.beginPath();
-          rr(tx, tagY, tw, 24, 12);
-          ctx.fill();
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(tag, tx + 8, tagY + 16);
-          tx += tw + 8;
-        }
-      }
-
       ctx.save();
       rr(imgX, imgY, imgSize, imgSize, 14);
       ctx.clip();
@@ -741,12 +702,44 @@ function SharePage() {
       ctx.drawImage(img, sx, sy, sw, sh);
       ctx.restore();
 
-      ctx.fillStyle = 'rgba(255,255,255,0.18)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
       ctx.lineWidth = 1.5;
       rr(imgX, imgY, imgSize, imgSize, 14);
       ctx.fill();
       ctx.stroke();
+
+      ctx.fillStyle = '#A09080';
+      ctx.font = '11px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText('食谱', infoX, imgY + 18);
+
+      ctx.fillStyle = '#3D2B1F';
+      const titleFontSize = 28;
+      ctx.font = `bold ${titleFontSize}px "Noto Serif SC", "SimSun", "PingFang SC", serif`;
+      const titleLines = wrapText(ctx, recipe.title, infoW);
+      const titleLineH = 38;
+      let ty = imgY + 50;
+      for (let ti = 0; ti < Math.min(titleLines.length, 2); ti++) {
+        ctx.fillText(titleLines[ti], infoX, ty);
+        ty += titleLineH;
+      }
+
+      const tags = [recipe.category, recipe.flavorType, recipe.cookingMethod].filter(Boolean).filter(t => t !== '/');
+      if (tags.length > 0) {
+        const tagY = imgY + imgSize - 28;
+        ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
+        let tx = infoX;
+        for (const tag of tags) {
+          const tw = ctx.measureText(tag).width + 16;
+          ctx.fillStyle = '#C44D34';
+          ctx.beginPath();
+          rr(tx, tagY, tw, 24, 12);
+          ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillText(tag, tx + 8, tagY + 16);
+          tx += tw + 8;
+        }
+      }
 
       ctx.fillStyle = '#C44D34';
       ctx.fillRect(0, headerH, W, accentH);

@@ -241,13 +241,13 @@ button {
   background: var(--red-light);
 }
 
-.suggest-random-section {
+.home-random-area {
   text-align: center;
-  padding: 28px 0 0;
+  padding: 0 16px 12px;
 }
 
-.suggest-random-text {
-  font-size: 15px;
+.home-random-area .suggest-random-text {
+  font-size: 14px;
   color: var(--gray-600);
   margin-bottom: 10px;
   font-family: var(--font-serif);
@@ -1242,6 +1242,46 @@ button {
 .btn-primary:hover {
   background: var(--red-hover);
 }
+
+/* ===================== FAVORITE BUTTON ===================== */
+.fav-btn-area {
+  padding: 20px 0 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.fav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  color: var(--gray-600);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fav-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-subtle);
+}
+
+.fav-btn.active {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
+.fav-btn:active {
+  transform: scale(0.96);
+}
+
+/* ===================== FAVORITES PAGE ===================== */
 
 /* ===================== EMPTY STATE ===================== */
 .empty-state {

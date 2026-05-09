@@ -1,7 +1,46 @@
 import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { getCategories, getFeaturedRecipes, getRecipesByCategory, getRecipeById, searchRecipes, recipes, getFlavorTypes, getCookingMethods, getProcessingLevels, filterRecipes, getRandomRecipe } from './data/recipes';
+import { useState, useRef, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
+import { getCategories, getRecipesByCategory, getRecipeById, searchRecipes, recipes, getFlavorTypes, getCookingMethods, getProcessingLevels, filterRecipes, getRandomRecipe } from './data/recipes';
 import './App.css';
+
+/* ---- Favorites helpers (localStorage) ---- */
+function loadFavorites() {
+  try { return JSON.parse(localStorage.getItem('cooklikehoc_favs') || '[]'); } catch { return []; }
+}
+function saveFavorites(ids) {
+  localStorage.setItem('cooklikehoc_favs', JSON.stringify(ids));
+}
+const FavoritesContext = createContext();
+function FavoritesProvider({ children }) {
+  const [favs, setFavs] = useState(loadFavorites);
+  const toggle = useCallback((id) => {
+    setFavs(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      saveFavorites(next);
+      return next;
+    });
+  }, []);
+  return (
+    <FavoritesContext.Provider value={{ favs, toggle }}>
+      {children}
+    </FavoritesContext.Provider>
+  );
+}
+function useFavorites() {
+  return useContext(FavoritesContext);
+}
+
+/* ---- Daily random 炒菜 (seeded by date) ---- */
+function getDailyStirFry(count = 5) {
+  const fried = recipes.filter(r => r.categoryDir === '炒菜' && r.steps && r.steps.length > 0);
+  const seed = [...new Date().toISOString().slice(0, 10)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const arr = [...fried];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(((seed * 1664525 + 1013904223) % 4294967296) / 4294967296 * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, count);
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -81,10 +120,11 @@ const ChevronLeftIcon = () => (
 
 function Home() {
   const categories = getCategories();
-  const featured = getFeaturedRecipes();
+  const dailyRecipes = useMemo(() => getDailyStirFry(5), []);
+  const randomRecipe = useMemo(() => getRandomRecipe(), []);
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef(null);
-  const totalBanners = featured.length;
+  const totalBanners = dailyRecipes.length;
 
   const scrollToBanner = useCallback((index) => {
     if (bannerRef.current) {
@@ -96,6 +136,7 @@ function Home() {
   }, []);
 
   useEffect(() => {
+    if (totalBanners === 0) return;
     const interval = setInterval(() => {
       setBannerIndex(prev => {
         const next = (prev + 1) % totalBanners;
@@ -125,9 +166,12 @@ function Home() {
       </div>
 
       <section className="section banner-section">
+        <div className="section-header">
+          <h2 className="section-title">今天尝尝这些菜</h2>
+        </div>
         <div className="banner-container">
           <div className="banner-track" ref={bannerRef} onScroll={handleBannerScroll}>
-            {featured.map(recipe => (
+            {dailyRecipes.map(recipe => (
               <Link to={`/recipe/${recipe.id}`} key={recipe.id} className="banner-card">
                 <div className="banner-img">
                   <RecipeImage src={recipe.image} alt={recipe.title} />
@@ -145,7 +189,7 @@ function Home() {
             ))}
           </div>
           <div className="banner-dots">
-            {featured.map((_, i) => (
+            {dailyRecipes.map((_, i) => (
               <button
                 key={i}
                 className={`banner-dot ${i === bannerIndex ? 'active' : ''}`}
@@ -155,6 +199,19 @@ function Home() {
           </div>
         </div>
       </section>
+
+      <div className="home-random-area">
+        <p className="suggest-random-text">不知道今天吃什么？来碰一下手气</p>
+        <Link to={`/recipe/${randomRecipe.id}`} className="random-btn" aria-label="随机推荐菜谱">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 4l3 3-3 3"/>
+            <path d="M3 20v-4a4 4 0 014-4h10"/>
+            <path d="M6 20l-3-3 3-3"/>
+            <path d="M21 4v4a4 4 0 01-4 4H7"/>
+          </svg>
+          碰一下
+        </Link>
+      </div>
 
       <section className="section category-section">
         <div className="section-header">
@@ -249,6 +306,8 @@ function RecipeDetailPage() {
   const recipe = getRecipeById(id);
   const categories = getCategories();
   const sameCategoryRecipes = recipe ? getRecipesByCategory(recipe.categoryDir).filter(r => r.id !== id) : [];
+  const { favs, toggle } = useFavorites();
+  const isFav = recipe ? favs.includes(recipe.id) : false;
 
   if (!recipe) {
     return (
@@ -360,6 +419,18 @@ function RecipeDetailPage() {
           </section>
         )}
 
+        <div className="fav-btn-area">
+          <button
+            className={`fav-btn ${isFav ? 'active' : ''}`}
+            onClick={() => toggle(recipe.id)}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            {isFav ? '已收藏' : '添加到收藏夹'}
+          </button>
+        </div>
+
         {sameCategoryRecipes.length > 0 && (
           <section className="recipe-section">
             <h3 className="recipe-section-title">更多{ categories.find(c => c.id === recipe.categoryDir)?.name }</h3>
@@ -383,22 +454,87 @@ function RecipeDetailPage() {
   );
 }
 
-function SearchPage() {
-  const [query, setQuery] = useState('');
-  const inputRef = useRef(null);
-  const randomRecipe = useMemo(() => getRandomRecipe(), []);
-  const results = query.trim() ? searchRecipes(query.trim()) : [];
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+function FavoritesPage() {
+  const { favs } = useFavorites();
+  const favRecipes = favs.map(id => getRecipeById(id)).filter(Boolean);
 
   return (
-    <div className="page search-page">
+    <div className="page favorites-page">
       <header className="app-header">
         <div className="header-content">
           <BackButton />
-          <h1>搜索菜谱</h1>
+          <h1>收藏夹</h1>
+        </div>
+      </header>
+
+      {favRecipes.length === 0 ? (
+        <div className="empty-state" style={{ padding: '60px 16px' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 16 }}>
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <p style={{ fontSize: 15, color: 'var(--gray-600)', marginBottom: 8 }}>收藏夹是空的</p>
+          <p style={{ fontSize: 13, color: 'var(--gray-400)' }}>在菜谱详情页点击收藏按钮添加</p>
+        </div>
+      ) : (
+        <div className="category-recipe-list" style={{ paddingTop: 12 }}>
+          {favRecipes.map(recipe => (
+            <div key={recipe.id} className="recipe-row-wrapper">
+              <Link to={`/recipe/${recipe.id}`} className="recipe-row">
+                <div className="recipe-row-img">
+                  <RecipeImage src={recipe.image} alt={recipe.title} />
+                </div>
+                <div className="recipe-row-info">
+                  <h4>{recipe.title}</h4>
+                  <div className="recipe-row-tags">
+                    <span className="meta-tag">{recipe.category}</span>
+                    {recipe.flavorType && <span className="meta-tag flavor">{recipe.flavorType}</span>}
+                  </div>
+                </div>
+                <div className="recipe-row-arrow"><ArrowIcon /></div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AllRecipesPage() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeFlavor, setActiveFlavor] = useState('');
+  const [activeMethod, setActiveMethod] = useState('');
+  const [activeLevel, setActiveLevel] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const inputRef = useRef(null);
+
+  const categories = getCategories();
+  const flavorTypes = getFlavorTypes();
+  const cookingMethods = getCookingMethods();
+  const processingLevels = getProcessingLevels();
+
+  const filteredRecipes = useMemo(() => {
+    if (searchQuery.trim()) {
+      return searchRecipes(searchQuery.trim());
+    }
+    return filterRecipes({
+      category: activeCategory,
+      flavorType: activeFlavor || undefined,
+      cookingMethod: activeMethod || undefined,
+      processingLevel: activeLevel || undefined,
+    });
+  }, [searchQuery, activeCategory, activeFlavor, activeMethod, activeLevel]);
+
+  const hasActiveFilters = activeFlavor || activeMethod || activeLevel;
+  const isSearching = searchQuery.trim() !== '';
+
+  return (
+    <div className="page all-recipes-page">
+      <header className="app-header">
+        <div className="header-content">
+          <BackButton />
+          <h1>全部菜谱</h1>
         </div>
       </header>
 
@@ -411,50 +547,23 @@ function SearchPage() {
             ref={inputRef}
             type="text"
             placeholder="搜索菜谱、味型、食材..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
           />
-          {query && (
-            <button className="search-clear" onClick={() => { setQuery(''); inputRef.current?.focus(); }}>
+          {searchQuery && (
+            <button className="search-clear" onClick={() => { setSearchQuery(''); inputRef.current?.focus(); }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           )}
         </div>
       </div>
 
-      {!query.trim() && (
-        <div className="search-suggestions">
-          <div className="suggest-hint-section">
-            <p className="suggest-hint-title">试试搜索</p>
-            <div className="suggest-chips">
-              {['红烧肉', '辣味', '清蒸', '鸡'].map(keyword => (
-                <button key={keyword} className="suggest-chip" onClick={() => setQuery(keyword)}>
-                  {keyword}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="suggest-random-section">
-            <p className="suggest-random-text">不知道今天吃什么？来碰一下手气</p>
-            <Link to={`/recipe/${randomRecipe.id}`} className="random-btn" aria-label="随机推荐菜谱">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 4l3 3-3 3"/>
-                <path d="M3 20v-4a4 4 0 014-4h10"/>
-                <path d="M6 20l-3-3 3-3"/>
-                <path d="M21 4v4a4 4 0 01-4 4H7"/>
-              </svg>
-              碰一下
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {query.trim() ? (
+      {isSearching ? (
         <>
-          <div className="search-info">找到 {results.length} 个结果</div>
-          {results.length > 0 ? (
+          <div className="search-info">找到 {filteredRecipes.length} 个结果</div>
+          {filteredRecipes.length > 0 ? (
             <div className="category-recipe-list">
-              {results.map(recipe => (
+              {filteredRecipes.map(recipe => (
                 <Link to={`/recipe/${recipe.id}`} key={recipe.id} className="recipe-row">
                   <div className="recipe-row-img">
                     <RecipeImage src={recipe.image} alt={recipe.title} />
@@ -482,136 +591,105 @@ function SearchPage() {
             </div>
           )}
         </>
-      ) : null}
-    </div>
-  );
-}
-
-function AllRecipesPage() {
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [activeFlavor, setActiveFlavor] = useState('');
-  const [activeMethod, setActiveMethod] = useState('');
-  const [activeLevel, setActiveLevel] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-
-  const categories = getCategories();
-  const flavorTypes = getFlavorTypes();
-  const cookingMethods = getCookingMethods();
-  const processingLevels = getProcessingLevels();
-
-  const filteredRecipes = filterRecipes({
-    category: activeCategory,
-    flavorType: activeFlavor || undefined,
-    cookingMethod: activeMethod || undefined,
-    processingLevel: activeLevel || undefined,
-  });
-
-  const hasActiveFilters = activeFlavor || activeMethod || activeLevel;
-
-  return (
-    <div className="page all-recipes-page">
-      <header className="app-header">
-        <div className="header-content">
-          <BackButton />
-          <h1>全部菜谱</h1>
-        </div>
-      </header>
-
-      <div className="category-tabs">
-        <button className={`cat-tab ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>全部</button>
-        {categories.map(cat => (
-          <button key={cat.id} className={`cat-tab ${activeCategory === cat.id ? 'active' : ''}`} onClick={() => setActiveCategory(cat.id)}>
-            {cat.name}
-          </button>
-        ))}
-      </div>
-
-      <div className="filter-bar">
-        <button
-          className={`filter-toggle ${showFilters ? 'active' : ''} ${hasActiveFilters ? 'has-filters' : ''}`}
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-          </svg>
-          筛选 {hasActiveFilters ? `(${[activeFlavor, activeMethod, activeLevel].filter(Boolean).length})` : ''}
-        </button>
-        {hasActiveFilters && (
-          <button className="filter-clear" onClick={() => { setActiveFlavor(''); setActiveMethod(''); setActiveLevel(''); }}>
-            清除
-          </button>
-        )}
-      </div>
-
-      {showFilters && (
-        <div className="filter-panel">
-          <div className="filter-group">
-            <span className="filter-label">味型</span>
-            <div className="filter-chips">
-              {flavorTypes.slice(0, 12).map(ft => (
-                <button
-                  key={ft.name}
-                  className={`filter-chip ${activeFlavor === ft.name ? 'active' : ''}`}
-                  onClick={() => setActiveFlavor(activeFlavor === ft.name ? '' : ft.name)}
-                >
-                  {ft.name} ({ft.count})
-                </button>
-              ))}
-            </div>
+      ) : (
+        <>
+          <div className="category-tabs">
+            <button className={`cat-tab ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>全部</button>
+            {categories.map(cat => (
+              <button key={cat.id} className={`cat-tab ${activeCategory === cat.id ? 'active' : ''}`} onClick={() => setActiveCategory(cat.id)}>
+                {cat.name}
+              </button>
+            ))}
           </div>
 
-          <div className="filter-group">
-            <span className="filter-label">烹饪方式</span>
-            <div className="filter-chips">
-              {cookingMethods.slice(0, 12).map(cm => (
-                <button
-                  key={cm.name}
-                  className={`filter-chip ${activeMethod === cm.name ? 'active' : ''}`}
-                  onClick={() => setActiveMethod(activeMethod === cm.name ? '' : cm.name)}
-                >
-                  {cm.name} ({cm.count})
-                </button>
-              ))}
-            </div>
+          <div className="filter-bar">
+            <button
+              className={`filter-toggle ${showFilters ? 'active' : ''} ${hasActiveFilters ? 'has-filters' : ''}`}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+              筛选 {hasActiveFilters ? `(${[activeFlavor, activeMethod, activeLevel].filter(Boolean).length})` : ''}
+            </button>
+            {hasActiveFilters && (
+              <button className="filter-clear" onClick={() => { setActiveFlavor(''); setActiveMethod(''); setActiveLevel(''); }}>
+                清除
+              </button>
+            )}
           </div>
 
-          <div className="filter-group">
-            <span className="filter-label">加工等级</span>
-            <div className="filter-chips">
-              {processingLevels.map(pl => (
-                <button
-                  key={pl.name}
-                  className={`filter-chip ${activeLevel === pl.name ? 'active' : ''}`}
-                  onClick={() => setActiveLevel(activeLevel === pl.name ? '' : pl.name)}
-                >
-                  {pl.name} ({pl.count})
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+          {showFilters && (
+            <div className="filter-panel">
+              <div className="filter-group">
+                <span className="filter-label">味型</span>
+                <div className="filter-chips">
+                  {flavorTypes.slice(0, 12).map(ft => (
+                    <button
+                      key={ft.name}
+                      className={`filter-chip ${activeFlavor === ft.name ? 'active' : ''}`}
+                      onClick={() => setActiveFlavor(activeFlavor === ft.name ? '' : ft.name)}
+                    >
+                      {ft.name} ({ft.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-      <div className="filter-result-count">
-        共 {filteredRecipes.length} 道菜
-      </div>
+              <div className="filter-group">
+                <span className="filter-label">烹饪方式</span>
+                <div className="filter-chips">
+                  {cookingMethods.slice(0, 12).map(cm => (
+                    <button
+                      key={cm.name}
+                      className={`filter-chip ${activeMethod === cm.name ? 'active' : ''}`}
+                      onClick={() => setActiveMethod(activeMethod === cm.name ? '' : cm.name)}
+                    >
+                      {cm.name} ({cm.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-      <div className="all-recipes-grid">
-        {filteredRecipes.map(recipe => (
-          <Link to={`/recipe/${recipe.id}`} key={recipe.id} className="recipe-card">
-            <div className="recipe-card-img">
-              <RecipeImage src={recipe.image} alt={recipe.title} />
-            </div>
-            <div className="recipe-card-body">
-              <h4>{recipe.title}</h4>
-              <div className="recipe-card-meta">
-                <span className="meta-tag">{recipe.category}</span>
-                {recipe.flavorType && <span className="meta-tag flavor">{recipe.flavorType}</span>}
+              <div className="filter-group">
+                <span className="filter-label">加工等级</span>
+                <div className="filter-chips">
+                  {processingLevels.map(pl => (
+                    <button
+                      key={pl.name}
+                      className={`filter-chip ${activeLevel === pl.name ? 'active' : ''}`}
+                      onClick={() => setActiveLevel(activeLevel === pl.name ? '' : pl.name)}
+                    >
+                      {pl.name} ({pl.count})
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </Link>
-        ))}
-      </div>
+          )}
+
+          <div className="filter-result-count">
+            共 {filteredRecipes.length} 道菜
+          </div>
+
+          <div className="all-recipes-grid">
+            {filteredRecipes.map(recipe => (
+              <Link to={`/recipe/${recipe.id}`} key={recipe.id} className="recipe-card">
+                <div className="recipe-card-img">
+                  <RecipeImage src={recipe.image} alt={recipe.title} />
+                </div>
+                <div className="recipe-card-body">
+                  <h4>{recipe.title}</h4>
+                  <div className="recipe-card-meta">
+                    <span className="meta-tag">{recipe.category}</span>
+                    {recipe.flavorType && <span className="meta-tag flavor">{recipe.flavorType}</span>}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -632,9 +710,9 @@ function BottomNav() {
       icon: <><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" strokeWidth="2"/></>,
     },
     {
-      path: '/search',
-      label: '搜索',
-      icon: <><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" strokeWidth="2"/><path d="m21 21-4.35-4.35" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></>,
+      path: '/favorites',
+      label: '收藏',
+      icon: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>,
     },
   ];
 
@@ -975,18 +1053,20 @@ function wrapText(ctx, text, maxWidth) {
 function App() {
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <div className="app">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/category/:id" element={<CategoryPage />} />
-          <Route path="/recipe/:id" element={<RecipeDetailPage />} />
-          <Route path="/share/:id" element={<SharePage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/all" element={<AllRecipesPage />} />
-        </Routes>
-        <BottomNav />
-      </div>
+      <FavoritesProvider>
+        <ScrollToTop />
+        <div className="app">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/category/:id" element={<CategoryPage />} />
+            <Route path="/recipe/:id" element={<RecipeDetailPage />} />
+            <Route path="/share/:id" element={<SharePage />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/all" element={<AllRecipesPage />} />
+          </Routes>
+          <BottomNav />
+        </div>
+      </FavoritesProvider>
     </BrowserRouter>
   );
 }

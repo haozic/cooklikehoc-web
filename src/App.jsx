@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { getCategories, getFeaturedRecipes, getRecipesByCategory, getRecipeById, searchRecipes, recipes, getFlavorTypes, getCookingMethods, getProcessingLevels, filterRecipes } from './data/recipes';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { getCategories, getFeaturedRecipes, getRecipesByCategory, getRecipeById, searchRecipes, recipes, getFlavorTypes, getCookingMethods, getProcessingLevels, filterRecipes, getRandomRecipe } from './data/recipes';
 import './App.css';
 
 function ScrollToTop() {
@@ -15,7 +15,7 @@ function BackButton() {
   const navigate = useNavigate();
   return (
     <button onClick={() => navigate(-1)} className="back-btn">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+      <ChevronLeftIcon />
       返回
     </button>
   );
@@ -58,10 +58,26 @@ const catIconColors = {
 function RecipeImage({ src, alt, className }) {
   const [error, setError] = useState(false);
   if (error) {
-    return <div className={className} style={{ background: 'var(--cream-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />;
+    return (
+      <div className={className} style={{ background: 'var(--cream-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--gray-400)' }}>
+        {alt || '暂无图片'}
+      </div>
+    );
   }
   return <img className={className} src={src} alt={alt} loading="lazy" onError={() => setError(true)} />;
 }
+
+const ArrowIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="m9 18 6-6-6-6"/>
+  </svg>
+);
+
+const ChevronLeftIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="m15 18-6-6 6-6"/>
+  </svg>
+);
 
 function Home() {
   const categories = getCategories();
@@ -104,8 +120,8 @@ function Home() {
   return (
     <div className="page home-page">
       <div className="home-hero">
-        <h1 className="hero-title">像老乡鸡那样做饭</h1>
-        <p className="hero-subtitle">老乡鸡菜品溯源报告 · {recipes.length} 道家常菜谱</p>
+        <h1 className="hero-title">老乡鸡菜谱</h1>
+        <p className="hero-subtitle">源自老乡鸡菜品溯源报告 · 174 道家常菜谱</p>
       </div>
 
       <section className="section banner-section">
@@ -215,10 +231,12 @@ function CategoryPage() {
                 {recipe.flavorType && <span className="meta-tag flavor">{recipe.flavorType}</span>}
               </div>
               <p className="ingredients-preview">
-                {recipe.ingredients.slice(0, 4).join('、')}{recipe.ingredients.length > 4 ? '...' : ''}
+                {recipe.ingredients.length > 0
+                  ? recipe.ingredients.slice(0, 4).join('、') + (recipe.ingredients.length > 4 ? '...' : '')
+                  : '暂无食材信息'}
               </p>
             </div>
-            <svg className="recipe-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
+            <div className="recipe-row-arrow"><ArrowIcon /></div>
           </Link>
         ))}
       </div>
@@ -238,7 +256,7 @@ function RecipeDetailPage() {
         <header className="app-header">
           <div className="header-content">
             <Link to="/" className="back-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+              <ChevronLeftIcon />
               返回
             </Link>
           </div>
@@ -299,17 +317,21 @@ function RecipeDetailPage() {
 
         <section className="recipe-section">
           <h3 className="recipe-section-title">食材</h3>
-          <ul className="ingredients-list">
-            {recipe.ingredients.map((ing, i) => (
-              <li key={i} className="ingredient-item">
-                <span className="ingredient-dot" />
-                <span>{ing}</span>
-              </li>
-            ))}
-          </ul>
+          {recipe.ingredients.length > 0 ? (
+            <ul className="ingredients-list">
+              {recipe.ingredients.map((ing, i) => (
+                <li key={i} className="ingredient-item">
+                  <span className="ingredient-dot" />
+                  <span>{ing}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ fontSize: 14, color: 'var(--gray-400)' }}>暂无食材信息</p>
+          )}
         </section>
 
-        {recipe.steps.length > 0 && (
+        {recipe.steps.length > 0 ? (
           <section className="recipe-section">
             <h3 className="recipe-section-title">做法</h3>
             <div className="steps-list">
@@ -330,6 +352,11 @@ function RecipeDetailPage() {
                 });
               })()}
             </div>
+          </section>
+        ) : (
+          <section className="recipe-section">
+            <h3 className="recipe-section-title">做法</h3>
+            <p style={{ fontSize: 14, color: 'var(--gray-400)' }}>暂无做法步骤</p>
           </section>
         )}
 
@@ -359,6 +386,7 @@ function RecipeDetailPage() {
 function SearchPage() {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
+  const randomRecipe = useMemo(() => getRandomRecipe(), []);
   const results = query.trim() ? searchRecipes(query.trim()) : [];
 
   useEffect(() => {
@@ -394,6 +422,33 @@ function SearchPage() {
         </div>
       </div>
 
+      {!query.trim() && (
+        <div className="search-suggestions">
+          <div className="suggest-hint-section">
+            <p className="suggest-hint-title">试试搜索</p>
+            <div className="suggest-chips">
+              {['红烧肉', '辣味', '清蒸', '鸡'].map(keyword => (
+                <button key={keyword} className="suggest-chip" onClick={() => setQuery(keyword)}>
+                  {keyword}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="suggest-random-section">
+            <p className="suggest-random-text">不知道今天吃什么？来碰一下手气</p>
+            <Link to={`/recipe/${randomRecipe.id}`} className="random-btn" aria-label="随机推荐菜谱">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 4l3 3-3 3"/>
+                <path d="M3 20v-4a4 4 0 014-4h10"/>
+                <path d="M6 20l-3-3 3-3"/>
+                <path d="M21 4v4a4 4 0 01-4 4H7"/>
+              </svg>
+              碰一下
+            </Link>
+          </div>
+        </div>
+      )}
+
       {query.trim() ? (
         <>
           <div className="search-info">找到 {results.length} 个结果</div>
@@ -411,10 +466,12 @@ function SearchPage() {
                       {recipe.flavorType && <span className="meta-tag flavor">{recipe.flavorType}</span>}
                     </div>
                     <p className="ingredients-preview">
-                      {recipe.ingredients.slice(0, 4).join('、')}{recipe.ingredients.length > 4 ? '...' : ''}
+                      {recipe.ingredients.length > 0
+                        ? recipe.ingredients.slice(0, 4).join('、') + (recipe.ingredients.length > 4 ? '...' : '')
+                        : '暂无食材信息'}
                     </p>
                   </div>
-                  <svg className="recipe-row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
+                  <div className="recipe-row-arrow"><ArrowIcon /></div>
                 </Link>
               ))}
             </div>
@@ -425,16 +482,7 @@ function SearchPage() {
             </div>
           )}
         </>
-      ) : (
-        <div className="search-hints">
-          <p className="hint-label">试试搜索</p>
-          <div className="hint-chips">
-            {['红烧', '清炒', '炖', '麻辣', '蒜蓉', '糖醋'].map(hint => (
-              <button key={hint} className="hint-chip" onClick={() => setQuery(hint)}>{hint}</button>
-            ))}
-          </div>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -804,7 +852,7 @@ function SharePage() {
 
       ctx.fillStyle = '#A09080';
       ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.fillText('像老乡鸡那样做饭', P + 115, H - 18);
+      ctx.fillText('老乡鸡菜谱', P + 115, H - 18);
 
       ctx.fillStyle = '#A09080';
       ctx.font = '11px "PingFang SC", "Microsoft YaHei", sans-serif';

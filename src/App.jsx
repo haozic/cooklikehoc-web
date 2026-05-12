@@ -374,6 +374,30 @@ function RecipeDetailPage() {
           )}
         </div>
 
+        {recipe.nutrition && Object.keys(recipe.nutrition).length > 0 && (
+          <section className="recipe-section">
+            <h3 className="recipe-section-title">营养成分</h3>
+            <div className="nutrition-grid">
+              {Object.entries(recipe.nutrition)
+                .filter(([key]) => !key.startsWith('钠'))
+                .map(([key, value]) => {
+                const match = key.match(/^(.+?)\((.+?)\)$/);
+                const label = match ? match[1] : key;
+                const unit = match ? match[2] : '';
+                return (
+                  <div key={key} className="nutrition-card">
+                    <span className="nutrition-value">
+                      {Number.isInteger(value) ? value : Number(value).toFixed(1)}
+                    </span>
+                    <span className="nutrition-unit">{unit}</span>
+                    <span className="nutrition-label">{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <section className="recipe-section">
           <h3 className="recipe-section-title">食材</h3>
           {recipe.ingredients.length > 0 ? (

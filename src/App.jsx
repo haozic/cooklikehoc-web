@@ -376,7 +376,7 @@ function RecipeDetailPage() {
 
         {recipe.nutrition && Object.keys(recipe.nutrition).length > 0 && (
           <section className="recipe-section">
-            <h3 className="recipe-section-title">营养成分</h3>
+            <h3 className="recipe-section-title">营养成分（每100g）</h3>
             <div className="nutrition-grid">
               {Object.entries(recipe.nutrition)
                 .filter(([key]) => !key.startsWith('钠'))

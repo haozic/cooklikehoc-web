@@ -33,10 +33,19 @@ function useFavorites() {
 /* ---- Daily random 炒菜 (seeded by date) ---- */
 function getDailyStirFry(count = 5) {
   const fried = recipes.filter(r => r.categoryDir === '炒菜' && r.steps && r.steps.length > 0);
-  const seed = [...new Date().toISOString().slice(0, 10)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  // Use local date (not UTC) so the day rolls at midnight local time
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const seed = [...dateStr].reduce((a, c) => a + c.charCodeAt(0), 0);
+  // Seeded PRNG — state evolves each call
+  let state = seed;
+  function next() {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    return state / 4294967296;
+  }
   const arr = [...fried];
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(((seed * 1664525 + 1013904223) % 4294967296) / 4294967296 * (i + 1));
+    const j = Math.floor(next() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr.slice(0, count);
@@ -120,7 +129,9 @@ const ChevronLeftIcon = () => (
 
 function Home() {
   const categories = getCategories();
-  const dailyRecipes = useMemo(() => getDailyStirFry(5), []);
+  const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const dailyRecipes = useMemo(() => getDailyStirFry(5), [todayStr]);
   const randomRecipe = useMemo(() => getRandomRecipe(), []);
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef(null);
